@@ -35,7 +35,7 @@ module gem_com
   integer :: gemout=777
   character(len=70) outname
   REAL :: endtm,begtm,pstm
-  REAL :: starttm,lasttm,tottm
+  REAL :: starttm,lasttm,tottm,start_tm,end_tm
   real :: start_ppush_tm, end_ppush_tm, tot_ppush_tm = 0, start_cpush_tm, end_cpush_tm, tot_cpush_tm = 0, start_pint_tm, end_pint_tm, tot_pint_tm = 0, start_cint_tm, end_cint_tm, tot_cint_tm = 0, start_grid_tm, end_grid_tm, tot_grid_tm = 0
   real :: start_jie_tm, end_jie_tm, tot_jie_tm = 0, start_den0_tm, end_den0_tm, tot_den0_tm = 0, start_setw_tm, end_setw_tm, tot_setw_tm = 0, start_weatxeps_tm, end_weatxeps_tm, tot_weatxeps_tm = 0, start_wiatxeps_tm, end_wiatxeps_tm, tot_wiatxeps_tm = 0, start_pbi_tm, end_pbi_tm, tot_pbi_tm = 0, start_pbe_tm, end_pbe_tm, tot_pbe_tm = 0, start_jpar0_tm, end_jpar0_tm, tot_jpar0_tm = 0 
   real :: start_init_pmove_tm, end_init_pmove_tm, tot_init_pmove_tm = 0
@@ -43,6 +43,7 @@ module gem_com
   real :: start_poisson_tm, end_poisson_tm, tot_poisson_tm = 0
   real :: start_ampere_tm, end_ampere_tm, tot_ampere_tm = 0
   real :: start_init_lap_tm, end_init_lap_tm, tot_init_lap_tm = 0
+  real :: start_init_fltm_tm, end_init_fltm_tm, tot_init_fltm_tm = 0
   real :: aux1(50000),aux2(20000)
   real,dimension(:),allocatable :: workx,worky,workz,xsinin,xsinout
   complex,dimension(:),allocatable :: tmpx,xin,xout,yin,yout,zin,zout
@@ -54,7 +55,8 @@ module gem_com
   integer :: icgp,jcgp,cgpfacx,cgpfacy,nxsrc,nesrc
   integer :: mme,mmb
   REAL, dimension(:,:),allocatable :: rwx,rwy
-  INTEGER,dimension(:),allocatable :: mm,tmm,lr
+  INTEGER*8,dimension(:),allocatable :: mm,tmm
+  INTEGER*8,dimension(:),allocatable :: lr
   integer :: micell,mecell !jycheng
   integer :: nonlin1,nonlin2 !jycheng
   REAL,dimension(:),allocatable :: tets,mims,q

@@ -7,15 +7,28 @@ program gem_main
     use gem_fft_wrapper
     implicit none
     integer :: n,i,j,k,ip,ns
+    real :: others,tmp
+    character(len=70) fname
+    character(len=5) holymyid
+    
+    real :: others
 
     call initialize
+    write(holdmyid,'(I5.5)') MyId
+    fname=outdir//'gem_timing_'//holdmyid//'.txt'
+    open(510+MyId,file=fname,status="replace",action="write")
+    end_tm = MPI_WTIME()
+    write(510+MyId,*)'initilization', end_tm - start_tm
     ! use the following two lines for r-theta contour plot
     if(iCrs_Sec==1)then
         call pol2d
         !     call balloon
         goto 100
     end if
+    start_tm = MPI_WTIME()
     if(iget.eq.0)call loader_wrapper
+    end_tm = MPI_WTIME()
+    write(510+MyId,*)'load', end_tm - start_tm
     if(iget.eq.1)then
         call restart(1,0)
     end if
@@ -70,27 +83,67 @@ program gem_main
     !if(ifluid==1)call weatxeps(1)
     lasttm=MPI_WTIME()
     tottm=lasttm-starttm
-    call MPI_Allreduce(MPI_IN_PLACE, tottm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_ppush_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_cpush_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_pint_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_cint_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_grid_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_jie_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_den0_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_setw_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_weatxeps_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_wiatxeps_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_pbi_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_pbe_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_jpar0_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_init_pmove_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_pmove_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_poisson_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    call MPI_Allreduce(MPI_IN_PLACE, tot_ampere_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr) 
-    call MPI_ALLreduce(MPI_IN_PLACE, tot_init_lap_tm, 1, MPI_REAL, MPI_SUM, MPI_COMM_WORLD, ierr)
-    if(myid==0) write(*,*)'ps time=',pstm,'tot time=',tottm - tot_init_lap_tm, 'ppush time', tot_ppush_tm, 'cpush time', tot_cpush_tm, 'pint time', tot_pint_tm, 'cint time', tot_cint_tm, 'grid time', tot_grid_tm, 'jie time', tot_jie_tm, 'den0 time', tot_den0_tm, 'setw time', tot_setw_tm, 'weatxeps time', tot_weatxeps_tm, 'wiatxeps time', tot_wiatxeps_tm, 'pbi time', tot_pbi_tm, 'pbe time', tot_pbe_tm, 'jpar0 time', tot_jpar0_tm
-    if(myid==0) write(*,*)'init pmove', tot_init_pmove_tm, 'pmove', tot_pmove_tm, 'poisson', tot_poisson_tm, 'ampere', tot_ampere_tm - tot_init_lap_tm, 'init_lap', tot_init_lap_tm
+     tottm = tottm - tot_init_lap_tm - tot_init_fltm_tm
+     tot_ampere_tm = tot_ampere_tm - tot_init_lap_tm - tot_init_fltm_tm
+     others = tottm-tot_grid_tm-tot_ppush_tm-tot_cpush_tm-tot_pint_tm-tot_cint_tm-tot_setw_tm-tot_weatxeps_tm-tot_wiatxeps_tm-tot_pbi_tm-tot_pbe_tm-tot_jpar0_tm-tot_init_pmove_tm-tot_pmove_tm-tot_poisson_tm-tot_ampere_tm
+     write(holdmyid,'(I5.5)') MyId
+     fname='gem_timing_'//holdmyid//'.txt'
+     open(510+MyId,file=fname,status="replace",action="write")
+     write(510+MyId,*)'myid=',myid, 'mm(ns)', mm(1), 'mme', mme
+     write(510+MyId,*)'tot time=',tottm, 'ppush time', tot_ppush_tm, 'cpush time', tot_cpush_tm, 'pint time', tot_pint_tm, 'cint time', tot_cint_tm, 'grid time', tot_grid_tm, 'jie time', tot_jie_tm, 'den0 time', tot_den0_tm, 'setw time', tot_setw_tm, 'weatxeps time', tot_weatxeps_tm, 'wiatxeps time', tot_wiatxeps_tm, 'pbi time', tot_pbi_tm, 'pbe time', tot_pbe_tm, 'jpar0 time', tot_jpar0_tm
+     write(510+MyId,*)'init pmove', tot_init_pmove_tm, 'pmove', tot_pmove_tm, 'poisson', tot_poisson_tm, 'ampere', tot_ampere_tm, 'init_lap', tot_init_lap_tm, 'init_fltm', tot_init_fltm_tm, 'other', others
+     write(510+MyId,*)'field solver percentage is', (tot_ampere_tm+tot_poisson_tm)/tottm, 'others precentage is', others/tottm, 'field solver + others', (tot_ampere_tm+tot_poisson_tm+others)/tottm
+     call flush(510+MyId)
+     close(510+MyId)
+     call mpi_barrier(mpi_comm_world,ierr)
+    call MPI_reduce(tottm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tottm = tmp/real(numprocs)
+    call MPI_reduce(tot_ppush_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_ppush_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_cpush_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_cpush_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_pint_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_pint_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_cint_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_cint_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_grid_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_grid_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_jie_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_jie_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_den0_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_den0_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_setw_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_setw_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_weatxeps_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_weatxeps_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_wiatxeps_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_wiatxeps_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_pbi_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_pbi_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_pbe_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_pbe_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_jpar0_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_jpar0_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_init_pmove_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_init_pmove_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_pmove_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_pmove_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_poisson_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_poisson_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_ampere_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_ampere_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_init_lap_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_init_lap_tm = tmp/real(numprocs)
+    call MPI_reduce(tot_init_fltm_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)tot_init_fltm_tm = tmp/real(numprocs)
+    call MPI_reduce(others, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    if(myid==0)others = tmp/real(numprocs)
+    if(myid==0)open(123, file = "gem_timing.txt", status = "replace", action="write")
+    if(myid==0) write(123,*)'tot time=',tottm, 'ppush time', tot_ppush_tm, 'cpush time', tot_cpush_tm, 'pint time', tot_pint_tm, 'cint time', tot_cint_tm, 'grid time', tot_grid_tm, 'jie time', tot_jie_tm, 'den0 time', tot_den0_tm, 'setw time', tot_setw_tm, 'weatxeps time', tot_weatxeps_tm, 'wiatxeps time', tot_wiatxeps_tm, 'pbi time', tot_pbi_tm, 'pbe time', tot_pbe_tm, 'jpar0 time', tot_jpar0_tm
+    if(myid==0) write(123,*)'init pmove', tot_init_pmove_tm, 'pmove', tot_pmove_tm, 'poisson', tot_poisson_tm, 'ampere', tot_ampere_tm, 'init_lap', tot_init_lap_tm, 'init_fltm', tot_init_fltm_tm, 'other', others
+    if(myid==0)write(123,*)'field solver percentage is', (tot_ampere_tm+tot_poisson_tm)/tottm, 'others precentage is', others/tottm, 'field solver + others', (tot_ampere_tm+tot_poisson_tm+others)/tottm
+    if(myid==0)call flush(123)
+    if(myid==0)close(123)
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
     100 call MPI_FINALIZE(ierr)
@@ -140,7 +193,8 @@ subroutine init
     include 'fftw3.f03'
     character(len=62) dumchar
     INTEGER :: i,j,k,m,n,ns,idum,i1,j1,k1,nthreads,iam,i_err
-    INTEGER :: mm1,mm2,lr1
+    INTEGER*8 :: mm1,mm2
+    INTEGER :: lr1
     real :: mims1,tets1,q1,kappan,kappat,r,qr,th,cost,dum,zdum
     real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp
     real :: grp,gxdgyp,jacp,jfnp,gn0ep,gt0ep,gt0ip,grdgtp,gthp,gsfp,gthfp
@@ -175,6 +229,7 @@ subroutine init
     pi2 = pi*2.
 
     call ppinit_mpi(myid,numprocs)
+    start_tm=MPI_WTIME()
     last=numprocs-1
     !the initial timestep index
     timestep=0
@@ -207,13 +262,13 @@ subroutine init
         stop
     endif
 
-    !mm1=int(imx,8)*int(jmx,8)*int(kmx,8)*int(micell,8)
-    mm1=imx*jmx*kmx*micell
-    !mm2=int(imx,8)*int(jmx,8)*int(kmx,8)*int(mecell,8)
-    mm2=imx*jmx*kmx*mecell
+    mm1=int(imx,8)*int(jmx,8)*int(kmx,8)*int(micell,8)
+    !mm1=imx*jmx*kmx*micell
+    mm2=int(imx,8)*int(jmx,8)*int(kmx,8)*int(mecell,8)
+    !mm2=imx*jmx*kmx*mecell
     ! increase mmx and mmxe from 1.5 to 3, to solve PE 7 xp size overflow issue
-    mmx=int(real(mm1/int(kmx*ntube))*3.0)
-    mmxe=int(real(mm2/int(kmx*ntube))*3.0)
+    mmx=int(real(imx*jmx*(micell/int(ntube)))*3.0)
+    mmxe=int(real(imx*jmx*(mecell/int(ntube)))*3.0)
     call ppinit_decomp(myid,numprocs,ntube,tube_comm,grid_comm)
     call hybinit
     call mpi_barrier(mpi_comm_world,ierr)
@@ -316,9 +371,8 @@ subroutine init
     rhoia = mims(1)*sqrt(T0e(nr/2)/mims(1)) /(q(1)*1.) /a
     tmm(1)=mm1
     tmm(2)=mm2
-    mm(:)=int(mm1/numprocs)
-    mme = int(mm2/numprocs)
-    if (MyId.eq.Last) mm(ns)=mm1-Last*mm(ns)
+    mm(:)=imx*jmx*(micell/int(ntube))
+    mme = imx*jmx*(micell/int(ntube))
     !     write(*,*)'in init  ',Myid,mm(ns)
     tets(1)=1
     lr(1)=lr1
@@ -527,7 +581,7 @@ subroutine init
     if(myid.eq.master)then
         write(*,*)zfnth(ntheta),thfnz(ntheta/2),thfnz(ntheta/2+1)
         if(myid.eq.master)open(9, file='plot', &
-            status='unknown',position='append')
+            status='replace',position='write')
         write(9,*)'dt,beta= ',dt, beta
         write(9,*)'amp = ',amp
         write(9,*)'peritr,ifluid= ',peritr,ifluid
@@ -541,6 +595,8 @@ subroutine init
         write(9,*)'V-ExB switch= ', vexbsw
         write(9,*)'V-parallel switch= ', vparsw
         write(9,*)'tot mmi,tot mme= ',mm1,mm2
+        write(9,*)'mm, mme is', mm(1), mme
+        write(9,*)'numprocs is', numprocs
         write(9,*)'pzcrite,encrit = ',pzcrite,encrit
         write(9,*) 'lxa,lymult,delra,r0a,rina,routa=',lxa,lymult,delra,r0a,rina,routa
         write(9,*) 'a,r0,rmaj0,q0,lx,ly,lz=',a,r0,rmaj0,q0,lx,ly,lz
@@ -2016,20 +2072,20 @@ subroutine parperp(vpar,vperp2,m,pi,cnt,MyId)
 
     INTERFACE
         real function revers(num,n)
-            integer :: num,n
+            integer*8 :: num,n
         end function revers
     END INTERFACE
 
     real :: vpar,vperp2,r1,r2,t,pi
-    INTEGER :: m,iflag,cnt,MyId
+    INTEGER*8 :: m,iflag,cnt,MyId
     real :: c0,c1,c2
     real :: d1,d2,d3
     data c0,c1,c2/2.515517,0.802853,0.010328/
     data d1,d2,d3/1.432788,0.189269,0.001308/
 
 
-    r1=revers(m+MyId*cnt,7)
-    r2=revers(m+MyId*cnt,11)
+    r1=revers(m+MyId*cnt,int(7,8))
+    r2=revers(m+MyId*cnt,int(11,8))
 
 
     !.....quiet start---see denavit pf '71(?) & abramowitz hand book
@@ -2179,7 +2235,7 @@ subroutine gkps(nstep,ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
     do i = 0,jcnt*2-1
@@ -2187,11 +2243,11 @@ subroutine gkps(nstep,ip)
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxg,ipivg,sl,INFO)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxg,ipivg,sl,INFO)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -2555,7 +2611,7 @@ subroutine ezamp(nstep,ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
 do i = 0,jcnt*2-1
@@ -2563,11 +2619,11 @@ do i = 0,jcnt*2-1
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxa,ipiva,INFO,sl)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxa,ipiva,INFO,sl)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -3080,7 +3136,7 @@ subroutine loadi(ns)
     real :: grp,gxdgyp,zoldp
     real :: wx0,wx1,wz0,wz1
 
-    cnt=int(tmm(1)/numprocs)
+    cnt=mm(1)
     !   write(*,*)'in loader cnt, mm(1)=',cnt,mm(1)
 
     myavgv=0.
@@ -3116,7 +3172,7 @@ subroutine loadi(ns)
             z2(m,ns) = wz0*zfnth(k)+wz1*zfnth(k+1)
             z2(m,ns)=min(z2(m,ns),lz-1e-8)
 
-            call parperp(vpar,vperp2,m,pi,cnt,MyId)
+            call parperp(vpar,vperp2,int(m,8),pi,int(cnt,8),int(MyId,8))
 
             r=x2(m,ns)-0.5*lx+lr0
             cost=cos(th)
@@ -4596,18 +4652,18 @@ subroutine dpdt(ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
     do i = 0,jcnt*2-1
         k = int(i/jcnt)
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxd,ipivd,INFO,sl)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxd,ipivd,INFO,sl)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -5634,7 +5690,7 @@ subroutine ampere(n,ip)
     use gem_com
     use gem_equil
     implicit none
-    integer :: iter=10
+    integer :: iter=2
     integer :: n,i,i1,j,k,ip
     real :: myrmsapa,rma(20),myavap(0:imx-1)
     real :: myjaca(0:imx-1),jaca(0:imx-1)
@@ -6330,8 +6386,8 @@ subroutine countw(n)
         MPI_SUM, &
         MPI_COMM_WORLD,ierr)
 
-    avwe = avwe/tmm(1)
-    wpbin = wpbin/tmm(1)
+    avwe = avwe/real(tmm(1))
+    wpbin = wpbin/real(tmm(1))
 
     if(myid.eq.0.and.mod(n,xnplt).eq.0)then
         !         write(*,*)'maxw,minw,avwe= ', maxw, minw,avwe
@@ -6816,12 +6872,12 @@ subroutine blendf
             !            call F07AWF(nb,tmp,nb,IPIV,work,100,INFO)
             !  call by lapack name instead
 
-            !$omp target data map(tofrom:tmp,IPIV,INFO,work)
-            !$omp dispatch
+            !!$omp target data map(tofrom:tmp,IPIV,INFO,work)
+            !!$omp dispatch
             call ZGETRF(nb,nb,tmp,nb,IPIV,INFO)
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRI(nb,tmp,nb,IPIV,work,100,INFO)
-            !$omp end target data
+            !!$omp end target data
 
             do m1 = 1,nb
                 do m2 = 1,nb
@@ -7076,7 +7132,7 @@ subroutine ldel
             z2e(m) = wz0*zfnth(k)+wz1*zfnth(k+1)
             z2e(m)=min(z2e(m),lz-1e-8)
 
-            call parperp(vpar,vperp2,m,pi,cnt,MyId)
+            call parperp(vpar,vperp2,int(m,8),pi,int(cnt,8),int(MyId,8))
             !   normalizations will be done in following loop...
 
             r=x2e(m)-0.5*lx+lr0
@@ -7526,7 +7582,7 @@ subroutine avge
     call MPI_ALLREDUCE(myavewe, avwe, &
         1            ,MPI_REAL8,       &
         MPI_SUM,MPI_COMM_WORLD,ierr)
-    avwe = avwe/tmm(1)
+    avwe = avwe/real(tmm(1))
 
     do m=1,mme
         w3e(m) = wght(m)
@@ -7780,7 +7836,7 @@ subroutine rstpe
 
         js = jacp
         jv = sqrt(2.)*vte**3*sqrt(vfac+1.e-3)
-        dum = totvol/tmm(1)/(dx*dy*dz*dvfac*dlamb*js*jv)
+        dum = totvol/real(tmm(1))/(dx*dy*dz*dvfac*dlamb*js*jv)
 
         myng(i,j,ie,il) = myng(i,j,ie,il)+1
         mytotw(i,j,ie,il) = mytotw(i,j,ie,il)+w3e(m)
@@ -8022,7 +8078,7 @@ subroutine rstpe
     call MPI_ALLREDUCE(myavewe, avwe, &
         1        ,MPI_REAL8,       &
         MPI_SUM,MPI_COMM_WORLD,ierr)
-    avwe = avwe/tmm(1)
+    avwe = avwe/real(tmm(1))
 
     call MPI_ALLREDUCE(mydwcell, dwcell, &
         imx*jmx,MPI_REAL8,       &
@@ -9668,17 +9724,17 @@ subroutine gkps_init
         end if
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxg,ipivg,INFO)
+        !!$omp target data map(tofrom:mxg,ipivg,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         call MPI_COMM_RANK(MPI_COMM_WORLD, i, j)
         print*, 'mpi rank=', i, 'INFO=', INFO, 'myid=', myid
@@ -9829,17 +9885,17 @@ subroutine ezamp_init
         end do
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxa,ipiva,INFO)
+        !!$omp target data map(tofrom:mxa,ipiva,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         open(20000+MyId,file=fname,form='unformatted',status='unknown')
         do i = 1,imx-1
@@ -9997,17 +10053,17 @@ subroutine dpdt_init
         end do
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxd,ipivd,INFO)
+        !!$omp target data map(tofrom:mxd,ipivd,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         open(30000+MyId,file=fname,form='unformatted',status='unknown')
         do i = 1,imx-1
@@ -10239,7 +10295,7 @@ subroutine flut
         js = jacp
         vte = sqrt(ter/emass)
         jv = sqrt(2.)*vte**3*sqrt(vfac+1.e-3)
-        dum = totvol/tmm(2)/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
+        dum = totvol/real(tmm(2))/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
 
         do j1 = 0,1
             do j2 = 0,1
@@ -10367,7 +10423,7 @@ subroutine flut
         js = jacp
         vte = sqrt(ter/emass)
         jv = sqrt(2.)*vte**3*sqrt(vfac+1.e-3)
-        dum = totvol/tmm(2)/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
+        dum = totvol/real(tmm(2))/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
 
         do j1 = 0,1
             do j2 = 0,1
@@ -11443,7 +11499,7 @@ subroutine laplace(u)
                     deltam = 5
                     numpol = 2*deltam+1
                     dzeta = pi2/lymult/jmx
-
+                    start_init_fltm_tm = MPI_WTIME()
                     if(ifirst .ne. -99)then
                         allocate(dthf(1:imx-1),mpolpf(1:imx-1,0:numpol-1),efac1(1:imx-1,0:jmx-1,0:1),efac2(1:imx-1,0:1,0:numpol-1))
                         do i = 1,imx-1
@@ -11472,7 +11528,8 @@ subroutine laplace(u)
                         end do
                         ifirst = -99
                     end if
-
+                    end_init_fltm_tm = MPI_WTIME()
+                    tot_init_fltm_tm = tot_init_fltm_tm + end_init_fltm_tm - start_init_fltm_tm
                     umn = 0.
 #if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
                     !$omp parallel do collapse(2) shared(imx,numpol,lymult,umn,efac2,dthf,jmx,efac1,dzeta,u) private(cdum,cdum1,udum)
