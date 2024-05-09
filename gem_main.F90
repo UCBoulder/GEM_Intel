@@ -2235,7 +2235,7 @@ subroutine gkps(nstep,ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
     do i = 0,jcnt*2-1
@@ -2243,11 +2243,11 @@ subroutine gkps(nstep,ip)
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxg,ipivg,sl,INFO)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxg,ipivg,sl,INFO)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -2611,7 +2611,7 @@ subroutine ezamp(nstep,ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
 do i = 0,jcnt*2-1
@@ -2619,11 +2619,11 @@ do i = 0,jcnt*2-1
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxa,ipiva,INFO,sl)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxa,ipiva,INFO,sl)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -4652,18 +4652,18 @@ subroutine dpdt(ip)
     temp3dxy = 0.
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!    !$omp parallel do private(k,j,myj)
+    !$omp parallel do private(k,j,myj)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
     do i = 0,jcnt*2-1
         k = int(i/jcnt)
         j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        !$omp target data map(tofrom:mxd,ipivd,INFO,sl)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mxd,ipivd,INFO,sl)
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k), &
             sl(:,j,k),imx-1,INFO) 
-        !$omp end target data
+        !!$omp end target data
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
     end do
@@ -6872,12 +6872,12 @@ subroutine blendf
             !            call F07AWF(nb,tmp,nb,IPIV,work,100,INFO)
             !  call by lapack name instead
 
-            !$omp target data map(tofrom:tmp,IPIV,INFO,work)
-            !$omp dispatch
+            !!$omp target data map(tofrom:tmp,IPIV,INFO,work)
+            !!$omp dispatch
             call ZGETRF(nb,nb,tmp,nb,IPIV,INFO)
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRI(nb,tmp,nb,IPIV,work,100,INFO)
-            !$omp end target data
+            !!$omp end target data
 
             do m1 = 1,nb
                 do m2 = 1,nb
@@ -9724,17 +9724,17 @@ subroutine gkps_init
         end if
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxg,ipivg,INFO)
+        !!$omp target data map(tofrom:mxg,ipivg,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         call MPI_COMM_RANK(MPI_COMM_WORLD, i, j)
         print*, 'mpi rank=', i, 'INFO=', INFO, 'myid=', myid
@@ -9885,17 +9885,17 @@ subroutine ezamp_init
         end do
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxa,ipiva,INFO)
+        !!$omp target data map(tofrom:mxa,ipiva,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         open(20000+MyId,file=fname,form='unformatted',status='unknown')
         do i = 1,imx-1
@@ -10053,17 +10053,17 @@ subroutine dpdt_init
         end do
 
 !#if defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
-!        !$omp parallel do private(k,j)
+        !$omp parallel do private(k,j)
 !#endif // defined(OPENACC2OPENMP_ORIGINAL_OPENMP)
 
-        !$omp target data map(tofrom:mxd,ipivd,INFO)
+        !!$omp target data map(tofrom:mxd,ipivd,INFO)
         do i = 0,jcnt*2-1
             k = int(i/jcnt)
             j = i-k*jcnt
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRF(imx-1,imx-1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k),INFO )
         end do
-        !$omp end target data
+        !!$omp end target data
 
         open(30000+MyId,file=fname,form='unformatted',status='unknown')
         do i = 1,imx-1

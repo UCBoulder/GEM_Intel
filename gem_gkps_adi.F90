@@ -214,19 +214,19 @@ subroutine gkps_adiabatic_electron(nstep,ip)
         !     mx_zonal(:,:)=cmplx(real(mx_zonal(:,:),0.0)
         !     mx(:,:,0,:)=cmplx(real(mx(:,:,0,:)),0.0)
 
-        !$omp target data map(tofrom:mx_zonal,ipiv_zonal,INFO)
-        !$omp dispatch
+        !!$omp target data map(tofrom:mx_zonal,ipiv_zonal,INFO)
+        !!$omp dispatch
         call ZGETRF(imx-1,imx-1,mx_zonal(:,:),imx-1,ipiv_zonal(:,:),INFO )
-        !$omp end target data
+        !!$omp end target data
 
-        !$omp target data map(tofrom:mx,ipiv,INFO)
+        !!$omp target data map(tofrom:mx,ipiv,INFO)
         do k=0,1
             do j=0,jcnt-1
-                !$omp dispatch
+                !!$omp dispatch
                 call ZGETRF(imx-1,imx-1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k),INFO )
             enddo
         enddo
-        !$omp end target data
+        !!$omp end target data
 
         ! save the matrix for restart
         if(igetmx.eq.0) then
@@ -300,19 +300,19 @@ subroutine gkps_adiabatic_electron(nstep,ip)
     temp3dxy=0.0
     ! solve the zonal-phi
 
-    !$omp target data map(tofrom:jft,sl,v_zonal,mx_zonal,ipiv_zonal,INFO,temp3dxy)
+    !!$omp target data map(tofrom:jft,sl,v_zonal,mx_zonal,ipiv_zonal,INFO,temp3dxy)
     do k=0,1
         j=0
         myj=jft(j)
         sl(1:imx-1,j,k)=v_zonal(1:imx-1,j,k)
         ! solve the MX_zonal
-        !$omp dispatch
+        !!$omp dispatch
         call ZGETRS('N',imx-1,1,mx_zonal(:,:),imx-1,ipiv_zonal(:,:), &
             sl(:,j,k),imx-1,INFO)
         temp3dxy(1:imx-1,myj,k)=sl(1:imx-1,j,k)
         temp3dxy(0,myj,k)=0.
     enddo
-    !$omp end target data
+    !!$omp end target data
 
     !  from rho(kx,ky) to phi(kx,ky)
     do k = 0,1
@@ -364,7 +364,7 @@ subroutine gkps_adiabatic_electron(nstep,ip)
 
     temp3dxy=0.
 
-    !$omp target data map(tofrom:jft,sl,v,v_zonal,mx,ipiv,INFO,temp3dxy)
+    !!$omp target data map(tofrom:jft,sl,v,v_zonal,mx,ipiv,INFO,temp3dxy)
     do k=0,1
         do j=0,jcnt-1
             myj=jft(j)
@@ -372,14 +372,14 @@ subroutine gkps_adiabatic_electron(nstep,ip)
             sl(1:imx-1,j,k)=v(1:imx-1,j,k)
             ! the ky=0 source term
             if(myj==jft(0))sl(1:imx-1,j,k)=v_zonal(1:imx-1,j,k)
-            !$omp dispatch
+            !!$omp dispatch
             call ZGETRS('N',imx-1,1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k), &
                 sl(:,j,k),imx-1,INFO)
             temp3dxy(1:imx-1,myj,k)=sl(1:imx-1,j,k)
             temp3dxy(0,myj,k)=0.
         enddo
     enddo
-    !$omp end target data
+    !!$omp end target data
 
     !  from rho(kx,ky) to phi(kx,ky)
     do k=0,1
